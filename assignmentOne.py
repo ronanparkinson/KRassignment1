@@ -37,7 +37,7 @@ class Agent(agents.Thing):
 
 class GameEnvironment(agents.Environment):
     """2_D environment"""
-    def __init__(self, width=6,height=6, movesLeft=20):
+    def __init__(self, width=6,height=6):
         super().__init__()
         self.width = width
         self.height = height
@@ -48,76 +48,66 @@ class GameEnvironment(agents.Environment):
     def thing_classes(self):
         return [agents.Wall, Rock, Coin, tableBasedAgent]
 
-    def percept(self, agent):
-        #print("test")
-        
+    def percept(self, agent):   
         return agent.location
        
-    def add_coins(self):
-        for x in range(self.width):
-            self.add_thing(Coin(), (x, random.choice(len(self.width -1))))
-            self.add_thing(Coin(), (x, random.choice(len(self.width -1))))
-            print("Coin test")
-            self.totalCoinsAvailable += 2
-            
-        for y in range(1, self.height - 1):
-            self.add_thing(Coin(), (y, random.choice(len(self.height -1))))
-            self.add_thing(Coin(), (y, random.choice(len(self.height -1))))
-            print("Coin test 2")
-            self.totalCoinsAvailable += 2
-    
     def add_Rock(self):
         for x in range(self.width):
-            self.add_thing(Rock(), (x, random.choice(len(self.width -1))))
-            print("Rock test")
+            self.add_thing(Rock(), (x, random.randint(self.width -1)))
+            print(f"Added rock at: {(x, random.randint(0, self.height - 1))}")
         for y in range(1, self.height - 1):
-            self.add_thing(Rock(), (y, random.choice(len(self.height -1))))
-            self.add_thing(Rock(), (y, random.choice(len(self.height -1))))
-            print("Rock 2test")
+            self.add_thing(Rock(), (y, random.randint(self.height -1)))
+            self.add_thing(Rock(), (y, random.randint(self.height -1)))
+            print(f"Added rock at: {(y, random.randint(0, self.width - 1))}")
+
+    #test function from gpt
+    def check_things_in_environment(self):
+        if not self.things:
+            print("No things in the environment.")
+        else:
+            for thing in self.things:
+                print(f"Thing in environment: {thing}, Location: {thing.location}")
 
     def execute_action(self, agent, action):
         agent.bump = False
-        print(agent.location)
+       # print(agent.location)
+        #chat
         if action == 'left':
-            agent.direction = agents.Direction.L
-            
+            destination = (agent.location[0] - 1, agent.location[1])
+            agent.location = destination
             agent.performance += 1
-         #   print("l")
+            print(f"Moved left to {agent.location}")
         elif action == 'right':
-            agent.direction = agents.Direction.R
+            destination = (agent.location[0] + 1, agent.location[1])
+            agent.location = destination
             agent.performance += 1
-            print(agent.performance)
-       #     print("r")
+            print(f"Moved right to {agent.location}")
         elif action == 'up':
-            agent.direction = agents.Direction.U
+            destination = (agent.location[0], agent.location[1] + 1)
+            agent.location = destination
             agent.performance += 1
-            print(agent.performance)
-       #     print("u")
+            print(f"Moved up to {agent.location}")
         elif action == 'down':
-            agent.direction = agents.Direction.D
+            destination = (agent.location[0], agent.location[1] - 1)
+            agent.location = destination
             agent.performance += 1
-            print(agent.performance)
-          #  print("d")
-        elif action == 'Forward':
-            agent.bump = self.move_to(agent, agents.Direction.move_forward(self, agent.location))
-        #print(agent.performance)
+            print(f"Moved down to {agent.location}")
 
     def move_to(self, thing, destination):
         thing.bump = self.some_things_at(destination, Rock)
-        print("different test")
         if not thing.bump:
             if self.some_things_at(destination, Coin):
                 print("Found a coin!")
-                self.things.remove(Coin)
+                self.delete_thing(Coin)
                 self.totalCoinsAvailable -= 1
-                thing.location = destination
-            if(thing.performance == 20):
-                self.is_done()
         return thing.bump
     
     def add_thing(self, thing, location=None):
-        #print("test")
+        print(f"Adding {thing} to the environment at {location}")
         return super().add_thing(thing, location)
+    
+    def delete_thing(self, thing):
+        super().delete_thing(thing)
     
     def add_walls(self): 
         """Put walls around the entire perimeter of the grid."""
@@ -131,6 +121,28 @@ class GameEnvironment(agents.Environment):
             self.add_thing(agents.Wall(), (self.width - 1, y))
           #  print("Wall test 2")
 
+    def add_coins(self):
+        for x in range(self.width):
+            #self.add_thing(Coin(), (x, random.randint(self.width -1)))
+            #self.add_thing(Coin(), (x, random.randint(self.width -1)))
+
+            location = (x, random.randint(0, self.height - 1))
+            self.things.add_thing(Coin(), location)  # Adding coins
+            print(f"Added coin at {location}")  # Debugging print
+            location = (x, random.randint(0, self.height - 1))
+            self.add_thing(Coin(), location)  # Adding coins
+            print(f"Added coin at {location}")
+            self.totalCoinsAvailable += 2
+            
+        for y in range(1, self.height - 1):
+            location = (random.randint(0, self.width - 1), y)
+            self.add_thing(Coin(), location)  # Adding coins
+            print(f"Added coin at {location}") 
+            location = (random.randint(0, self.width - 1), y)
+            self.add_thing(Coin(), location)  # Adding coins
+            print(f"Added coin at {location}") 
+            self.totalCoinsAvailable += 2
+
     def is_inbounds(self, location):
         """Checks to make sure that the location is inbounds (within walls if we have walls)"""
         x, y = location
@@ -138,11 +150,12 @@ class GameEnvironment(agents.Environment):
         return not (x < self.x_start or x > self.x_end or y < self.y_start or y > self.y_end)
 
     def default_location(self, thing):
-        location = self.random_location_inbounds()
+        '''location = self.random_location_inbounds()
         while self.some_things_at(location, Rock) or self.some_things_at(location, Coin):
             # we will find a random location with no obstacles
             location = self.random_location_inbounds()
-      #  print("huh...")        
+      #  print("huh...")        '''
+        location = (0, 0)
         return location
 
     def random_location_inbounds(self, exclude=None):
@@ -167,26 +180,9 @@ class Coin(agents.Thing):
 def tableBasedAgent():
     #total moves from table equals 20 moves
     table = {
-    (((0, 0), Coin()),): 'right',   
-    (((1, 0,), None),): 'right', 
-    (((2, 0), Coin()),): 'up',       
-    (((2, 1), None),): 'left',   
-    (((1, 1), None),): 'right', 
-    (((2, 1), Rock()),): 'up',
-    (((2, 2), None),): 'right',
-    (((3 ,2), None),): 'down',
-    (((3, 1), None),): 'right',
-    (((4, 1), Coin()),): 'up',
-    (((4, 2), Rock()),): 'left',
-    (((3, 2), None),): 'up',
-    (((3, 3), None),): 'up',
-    (((3, 4), Coin()),): 'right',
-    (((4, 4), None),): 'up',
-    (((4, 5), None),): 'right',
-    (((5, 5), None),): 'down',
-    (((5, 4), None),): 'down',
-    (((4, 4), None),): 'left',
-    (((3, 4), None),): 'up'
+        ((0, 0), ): 'right',
+        ((0, 0), (1, 0),): 'right',
+        ((0, 0), (1, 0), (2, 0), ): 'up'
     }
     return agents.Agent(agents.TableDrivenAgentProgram(table))
 
