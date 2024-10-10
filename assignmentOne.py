@@ -21,7 +21,7 @@ class Agent(agents.Thing):
         self.bump = False
         self.holding = []
         self.performance = 0
-        #self.movesRemainging = 20
+        self.movesRemainging = 20
         if program is None or not isinstance(program, collections.abc.Callable):
             print("Can't find a valid program for {}, falling back to default.".format(self.__class__.__name__))
 
@@ -41,6 +41,7 @@ class GameEnvironment(agents.Environment):
         super().__init__()
         self.width = width
         self.height = height
+        self.observers = []
         self.x_start, self.y_start = (0,0)
         self.x_end, self.y_end = (self.width - 1, self.height - 1)
         self.totalCoinsAvailable = 0
@@ -60,46 +61,54 @@ class GameEnvironment(agents.Environment):
             self.add_thing(Rock(), (y, random.randint(self.height -1)))
             print(f"Added rock at: {(y, random.randint(0, self.width - 1))}")
 
-    #test function from gpt
-    def check_things_in_environment(self):
-        if not self.things:
-            print("No things in the environment.")
-        else:
-            for thing in self.things:
-                print(f"Thing in environment: {thing}, Location: {thing.location}")
+
 
     def execute_action(self, agent, action):
         agent.bump = False
-       # print(agent.location)
+        print(agent.location)
         #chat
         if action == 'left':
             destination = (agent.location[0] - 1, agent.location[1])
-            agent.location = destination
-            agent.performance += 1
-            print(f"Moved left to {agent.location}")
+            agent.bump = self.move_to(agent, destination)
+            if agent.bump == True:
+                agent.location = destination
+                agent.performance += 1
+                print(f"Moved left to {agent.location}")
         elif action == 'right':
             destination = (agent.location[0] + 1, agent.location[1])
-            agent.location = destination
-            agent.performance += 1
-            print(f"Moved right to {agent.location}")
+            agent.bump = self.move_to(agent, destination)
+            #print(agent.bump)
+            if agent.bump == True:
+                agent.location = destination
+                agent.performance += 1
+                print(f"Moved right to {agent.location}")
         elif action == 'up':
             destination = (agent.location[0], agent.location[1] + 1)
-            agent.location = destination
-            agent.performance += 1
-            print(f"Moved up to {agent.location}")
+            agent.bump = self.move_to(agent, destination)
+            if agent.bump == True:
+                agent.location = destination
+                agent.performance += 1
+                print(f"Moved up to {agent.location}")
         elif action == 'down':
             destination = (agent.location[0], agent.location[1] - 1)
-            agent.location = destination
-            agent.performance += 1
-            print(f"Moved down to {agent.location}")
+            agent.bump = self.move_to(agent, destination)
+            if agent.bump == True:
+                agent.location = destination
+                agent.performance += 1
+                print(f"Moved down to {agent.location}")
 
     def move_to(self, thing, destination):
-        thing.bump = self.some_things_at(destination, Rock)
+        #print(thing)
+        thing.bump = self.some_things_at(destination, agents.Obstacle)
         if not thing.bump:
+            for o in self.observers:
+                o.thing_moved(thing)
+            print("test")
             if self.some_things_at(destination, Coin):
                 print("Found a coin!")
-                self.delete_thing(Coin)
+                agents.XYEnvironment.delete_thing(Coin)
                 self.totalCoinsAvailable -= 1
+        print(thing.bump)
         return thing.bump
     
     def add_thing(self, thing, location=None):
@@ -127,7 +136,7 @@ class GameEnvironment(agents.Environment):
             #self.add_thing(Coin(), (x, random.randint(self.width -1)))
 
             location = (x, random.randint(0, self.height - 1))
-            self.things.add_thing(Coin(), location)  # Adding coins
+            self.add_thing(Coin(), location)  # Adding coins
             print(f"Added coin at {location}")  # Debugging print
             location = (x, random.randint(0, self.height - 1))
             self.add_thing(Coin(), location)  # Adding coins
@@ -143,6 +152,15 @@ class GameEnvironment(agents.Environment):
             print(f"Added coin at {location}") 
             self.totalCoinsAvailable += 2
 
+    def add_observer(self, observer):
+        """Adds an observer to the list of observers.
+        An observer is typically an EnvGUI.
+
+        Each observer is notified of changes in move_to and add_thing,
+        by calling the observer's methods thing_moved(thing)
+        and thing_added(thing, loc)."""
+        self.observers.append(observer)
+
     def is_inbounds(self, location):
         """Checks to make sure that the location is inbounds (within walls if we have walls)"""
         x, y = location
@@ -150,12 +168,11 @@ class GameEnvironment(agents.Environment):
         return not (x < self.x_start or x > self.x_end or y < self.y_start or y > self.y_end)
 
     def default_location(self, thing):
-        '''location = self.random_location_inbounds()
+        location = (self.random_location_inbounds())
         while self.some_things_at(location, Rock) or self.some_things_at(location, Coin):
             # we will find a random location with no obstacles
             location = self.random_location_inbounds()
-      #  print("huh...")        '''
-        location = (0, 0)
+        print("huh...")        
         return location
 
     def random_location_inbounds(self, exclude=None):
@@ -171,7 +188,7 @@ class GameEnvironment(agents.Environment):
   #      if self.movesLeft == 15 | self.movesLeft == 10 | self.move_rock == 5:
   #          self.things
   
-class Rock(agents.Thing):
+class Rock(agents.Obstacle):
     pass
 
 class Coin(agents.Thing):
@@ -182,12 +199,13 @@ def tableBasedAgent():
     table = {
         ((0, 0), ): 'right',
         ((0, 0), (1, 0),): 'right',
-        ((0, 0), (1, 0), (2, 0), ): 'up'
+        ((0, 0), (1, 0), (2, 0), ): 'up',
+        ((0, 0), (1, 0), (2, 0), (2, 1), ): 'up'
     }
     return agents.Agent(agents.TableDrivenAgentProgram(table))
 
 
-def AgentTypeTwo():
+def RandomReflexAgent():
     pass
 
 def AgentTypeThree():
