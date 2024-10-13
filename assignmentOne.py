@@ -51,7 +51,7 @@ class GameEnvironment(agents.Environment):
         return [agents.Wall, Rock, Coin, tableBasedAgent, RandomReflexAgent, ModelAgent]
 
     def percept(self, agent):   
-        return agent.location, agent.visited
+        return agent.location #, agent.visited
        
     def execute_action(self, agent, action):
         agent.bump = False
@@ -220,8 +220,8 @@ def ModelAgent():
 
 
 environment = GameEnvironment
-agentsList = [ModelAgent]
-result = agents.compare_agents(environment, agentsList, n=20, steps=20)
+agentsList = [RandomReflexAgent]
+result = agents.compare_agents(environment, agentsList, n=1, steps=20)
 
 performance_tableBasedAgent = result[0][1]
 #performance_RandomReflexAgent = result[1][1]
@@ -229,3 +229,178 @@ performance_tableBasedAgent = result[0][1]
 
 print("performance of GameEnvironment", performance_tableBasedAgent)
 #print("performance of GameEnvironment Two", performance_RandomReflexAgent)
+
+
+#Q2
+
+import random
+from agents import Agent
+from search import Problem, breadth_first_graph_search, depth_first_graph_search
+from assignmentOne import GameEnvironment
+
+class Rock(agents.Obstacle):
+    pass
+
+class Coin(agents.Thing):
+    pass
+
+class RandomAgent(Agent):
+    def __init__(self):
+        super().__init__()
+        self.program = self.possibleMoves
+
+    def possibleMoves(self):
+        return random.choice(['left', 'right', 'up', 'down'])
+    
+class SearchEnvironment(GameEnvironment):
+
+    def __init__(self, width=8, height=8):
+        super().__init__(width, height)
+        self.add_coins()
+        self.add_Rock()
+
+    def add_coins(self):
+        return super().add_coins()
+    def add_Rock(self):
+        return super().add_Rock()
+    
+class CoinProblem(Problem):
+    def __init__(self, initial_state, width, height):
+        print("Initial state:", initial_state)
+        self.width = width
+        self.height = height
+        self.x_start, self.y_start = (0,0)
+        self.x_end, self.y_end = (self.width - 1, self.height - 1)
+        super().__init__(initial_state)
+
+    def actions(self, state):
+        print('actions', state)
+        (x, y), _, _ = state
+        print("Current state:", state)
+        print("testing new moves here!")
+        moves = []
+
+        if x > 0:
+            moves.append('left')
+        if x < self.width - 1:
+            moves.append('right')
+        if y > 0 and (x, y - 1):
+            moves.append('down')
+        if y < self.height - 1:
+            moves.append('up')
+        
+        return moves
+    
+    def result(self, state, action):
+        print('result', state )
+        (x, y), coin_location, rocks_locations = state
+        coin_location = set(coin_location)
+        rocks_locations = set(rocks_locations)
+
+        if action == 'left':
+            print('left')
+            destination = (x - 1, y)
+            if destination in rocks_locations:
+                print('in rocks')
+                return (x, y), tuple(coin_location), tuple(rocks_locations)
+            if GameEnvironment.is_inbounds(self, destination):
+                print('iiiii')
+                if (x, y) in coin_location:
+                    coin_location.remove((x, y))
+                return (destination, tuple(coin_location), tuple(rocks_locations))
+        elif action == 'right':
+            print('right')
+            destination = (x + 1, y)
+            if destination in rocks_locations:
+                print('in rocks')
+                return ((x, y), tuple(coin_location), tuple(rocks_locations))
+            if GameEnvironment.is_inbounds(self, destination):
+                print('aaaa')
+                if (x, y) in coin_location:
+                    coin_location.remove((x, y))
+                return (destination, tuple(coin_location), tuple(rocks_locations))
+        elif action == 'up':
+            print('up')
+            destination = (x, y + 1 )
+            if destination in rocks_locations:
+                print('in rocks')
+                return (x, y), tuple(coin_location), tuple(rocks_locations)
+            if GameEnvironment.is_inbounds(self, destination):
+                print('mmmmm')
+                if (x, y) in coin_location:
+                    coin_location.remove((x, y))
+                return (destination, tuple(coin_location), tuple(rocks_locations))
+        elif action == 'down':
+            print('down')
+            destination = (x, y - 1)
+            if destination in rocks_locations:
+                print('in rocks')
+                return (x, y), tuple(coin_location), tuple(rocks_locations)
+            if GameEnvironment.is_inbounds(self, destination):
+                print('hhhhh')
+                if (x, y) in coin_location:
+                    coin_location.remove((x, y))
+                return (destination, tuple(coin_location), tuple(rocks_locations))
+        
+    def goal_test(self, state):
+
+        if state is None:
+            print("State is None in goal_test")
+            return False  # Invalid state, not a goal
+        
+        print('goal state', state)
+        self.state = state
+        (x, y), coin_location, rocks_locations= state
+        print('coin location', coin_location)
+        
+        return len(coin_location) == 0
+
+    
+    def step_cost(self, action):
+        if action == 'left' or  action == 'right':
+            return 5
+        if action == 'up':
+            return 1
+        if action == 'down':
+            return 2 
+        
+def get_inital_state_from_env(env):
+    agent_location = None
+    coin_location = set()
+    rocks_locations = set()
+
+    for thing in env.things:
+        if isinstance(thing, Coin):
+            coin_location.add(thing.location)
+        elif isinstance(thing, Rock):
+            rocks_locations.add(thing.location)
+        elif isinstance(thing, Agent):
+            agent_location = thing.location
+
+    return(agent_location, tuple(coin_location), tuple(rocks_locations))
+    
+if __name__ == '__main__':
+    agent = RandomAgent()
+    coin = Coin()
+    rock = Rock()
+
+    env = SearchEnvironment(width=8, height=8)
+    env.add_thing(agent, (0, 0))
+    env.add_thing(coin, env.random_location_inbounds())
+    env.add_thing(rock, env.random_location_inbounds())
+
+
+    initial_state = get_inital_state_from_env(env)
+    print("Initial state:", initial_state)  # For debugging
+    
+    coin_problem = CoinProblem(initial_state, env.width, env.height)
+
+    goal_node = depth_first_graph_search(coin_problem)
+
+    if goal_node:
+        print("Solution found!")
+        print("Solution steps:", goal_node.solution())
+        print("Path to solution:", [node.state for node in goal_node.path()])
+        print("Total cost:", goal_node.path_cost)
+else:
+    print("No solution found.")
