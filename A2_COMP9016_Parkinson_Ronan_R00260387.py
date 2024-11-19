@@ -48,9 +48,18 @@ def questionOne():
         print("Total Clauses: ", len(kb.clauses))
     print_clauses(kb)
 
-    ancestorWithBE = fol_bc_ask(kb, expr('HasblueEyes(x)'))
-    for AncWithBeyes in ancestorWithBE:
-        print("Franks ancestors with blue eyes:", AncWithBeyes)
+    # ancestorWithBE = fol_bc_ask(kb, expr('HasblueEyes(x)'))
+    # for AncWithBeyes in ancestorWithBE:
+    #     print("Franks ancestors with blue eyes:", AncWithBeyes)
+
+    ancestorWithBE = fol_bc_ask(kb, expr('Ancestor(x, Frank)'))
+    for Ancestor in ancestorWithBE:
+       # print("One of Franks ancestors:", Ancestor)
+        checkIfAncestorHasBE = fol_bc_ask(kb, expr('HasblueEyes(x)'))
+        for AncWithBEs in checkIfAncestorHasBE:
+            #print("Franks ancestors with Blue Eyes", AncWithBEs)
+            if Ancestor == AncWithBEs:
+                print("One of Franks ancestors with blue eyes is:", Ancestor)
 
     areCousins = fol_fc_ask(kb, expr("Cousin(Carol, Eve)"))
     print(("Are Carol and eve cousins?", list(areCousins)))
