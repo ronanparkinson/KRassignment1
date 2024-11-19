@@ -23,8 +23,10 @@ def questionOne():
         if doesInherit:
             kb.tell(expr('InheritsBlueEyes(y) ==> HasblueEyes(y)'))
             gotBlueEyes = fol_fc_ask(kb, expr('HasblueEyes(Frank)'))
-            for checkInherit in gotBlueEyes:
-                print(gotBlueEyes)
+            gotBlueEyesBC = fol_bc_ask(kb, expr('HasblueEyes(Frank)'))
+            print("fc", list(gotBlueEyes))
+            for checkInheritBC in gotBlueEyesBC:
+                print("bc", checkInheritBC)
             ##could remove the rule from the kb here if prevent it from happening afterwards unnecessarily
 
     ##Inference
@@ -34,9 +36,9 @@ def questionOne():
     print('\nDoes Frank have blue eyes?', list(haveBlueEyes))
     #print("\nForward Chaining Query: hasblueEyes(Frank)")
 
-    infer_rash_alice = fol_bc_ask(kb, expr('HasblueEyes(Frank)'))
-    for rash in infer_rash_alice:
-        print(rash)
+    gotBlueEyes = fol_bc_ask(kb, expr('HasblueEyes(Frank)'))
+    for Beyes in gotBlueEyes:
+        print(Beyes)
 
     def print_clauses(kb, message="Clauses in the Knowledge Base:", bool_print=True):
         if bool_print:
@@ -45,5 +47,16 @@ def questionOne():
                 print(clause)
         print("Total Clauses: ", len(kb.clauses))
     print_clauses(kb)
+
+    ancestorWithBE = fol_bc_ask(kb, expr('HasblueEyes(x)'))
+    for AncWithBeyes in ancestorWithBE:
+        print("Franks ancestors with blue eyes:", AncWithBeyes)
+
+    areCousins = fol_fc_ask(kb, expr("Cousin(Carol, Eve)"))
+    print(("Are Carol and eve cousins?", list(areCousins)))
+
+    # areCousinsBC = fol_bc_ask(kb, expr("Cousin(Carol, Eve)"))
+    # for check in areCousinsBC:
+    #     print(("Are Carol and eve cousins in BC?", check))
 
 questionOne()
