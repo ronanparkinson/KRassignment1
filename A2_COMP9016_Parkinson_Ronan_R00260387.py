@@ -7,7 +7,7 @@ def questionOne():
     kb.tell(expr('(Parent(x,y) & HasblueEyes(x)) ==> InheritsBlueEyes(y)'))
     kb.tell(expr("Parent(x, y) ==> Ancestor(x, y)"))
     kb.tell(expr("(Parent(x, y) & Ancestor(z, x)) ==> Ancestor(z, y)"))
-    kb.tell(expr("(Parent(pa, cx) & Parent(pb, cy) & Sibling(pa, pb) & NotEqual(cx != cy)) ==> Cousin(cx, cy)"))
+    kb.tell(expr("(Parent(pa, cx) & Parent(pb, cy) & Sibling(pa, pb) & NotEqual(cx, cy)) ==> Cousin(cx, cy)"))
 
     #facts
     kb.tell(expr("Parent(Alice, Carol)"))
@@ -15,7 +15,7 @@ def questionOne():
     kb.tell(expr("Parent(Alice, Dave)"))
     kb.tell(expr("Parent(Bob, Dave)"))
     kb.tell(expr("Spouse(Eve, Dave)"))
-    kb.tell(expr('Parent(Carol, Frank)'))
+    kb.tell(expr('Parent(Carol, Frank)'))   
     kb.tell(expr('HasblueEyes(Carol)'))
 
     def inheritsBE():
@@ -27,7 +27,7 @@ def questionOne():
             print("fc", list(gotBlueEyes))
             for checkInheritBC in gotBlueEyesBC:
                 print("bc", checkInheritBC)
-            ##could remove the rule from the kb here if prevent it from happening afterwards unnecessarily
+            ##could remove the rule from the kb here to prevent it from happening afterwards unnecessarily
 
     ##Inference
     inheritsBE()
@@ -69,3 +69,78 @@ def questionOne():
     #     print(("Are Carol and eve cousins in BC?", check))
 
 questionOne()
+
+from probability import BayesNet, enumeration_ask
+
+
+def questionTwo():
+    env_tech_impact = BayesNet([
+        ('TechInnovation', '', 0.8),  # Prior probability
+        ('Urbanisation', '', 0.4),  # Prior probability
+        ('JobMarket', 'TechInnovation', {
+            (True,): 0.85,
+            (False,): 0.3
+        }),
+        ('CleanEnergyAdoption', 'TechInnovation Urbanisation', {
+            (True, True): 0.75,
+            (True, False): 0.5,
+            (False, True): 0.3,
+            (False, False): 0.1
+        }),
+        ('CarbonEmissions', 'Urbanisation CleanEnergyAdoption', {
+            (True, True): 0.4,
+            (True, False): 0.55,
+            (False, True): 0.7,
+            (False, False): 0.95
+        }),
+        ('EcologicalFootprint', 'CarbonEmissions', {
+            (True,): 0.6,
+            (False,): 0.45
+        }),
+    ])
+
+    # Query the network
+    print("P(JobMarket | TechInnovation):")
+    print(enumeration_ask('JobMarket', {'TechInnovation': True}, env_tech_impact).show_approx())
+
+    print("\nP(CarbonEmissions | Urbanisation=True, CleanEnergyAdoption=False):")
+    print(enumeration_ask('CarbonEmissions', {'Urbanisation': True, 'CleanEnergyAdoption': False},
+                          env_tech_impact).show_approx())
+
+    print("\nP(EcologicalFootprint | CarbonEmissions=True):")
+    print(enumeration_ask('EcologicalFootprint', {'CarbonEmissions': True}, env_tech_impact).show_approx())
+
+questionTwo()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
